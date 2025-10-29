@@ -16,4 +16,8 @@ public interface IAppRepository
     IReadOnlyList<AppUser> GetUsers();
     AppUser AddOrGetUser(string login, string role);
     AppUser? FindUser(string login);
+
+    // Bookings
+    IReadOnlyList<Booking> GetBookingsForDay(DateOnly day, TimeZoneInfo tz);
+    (bool ok, string? error, Booking? booking) TryCreateBooking(Guid roomId, DateTime startLocal, DateTime endLocal, string title, string createdByLogin, TimeZoneInfo tz);
 }

@@ -1,26 +1,43 @@
 @{
     // View title used by layout's <title> tag
     ViewData["Title"] = "Booking calendar";
-    var user = Context.Session.GetString("UserLogin");
-    var role = Context.Session.GetString("UserRole");
 }
 
 <h2>Booking calendar</h2>
 
-@if (!string.IsNullOrEmpty(user))
-{
-    <p>Signed in as: <strong>@user</strong> (role: @role)</p>
-    <p><a href="/Account/Logout">Logout</a></p>
-}
-else
-{
-    <p>You are not logged in.</p>
-    <div>
-        <a href="/Account/Login/admin">Login as admin</a>
-        <span> | </span>
-        <a href="/Account/Login/user">Login as user</a>
-    </div>
-}
+<div style="margin: 8px 0;">
+    <label for="dayPicker">Day:</label>
+    <input type="date" id="dayPicker" />
+    <button id="todayBtn">Today</button>
+</div>
 
-<hr />
-<p>The calendar and reservation list will appear here soon.</p>
+<div id="calendarContainer"></div>
+
+<div id="createForm" style="margin-top:16px; display:none; border:1px solid #eee; padding:12px;">
+    <h3>Create booking</h3>
+    <form id="bookingForm">
+        <input type="hidden" id="roomId" />
+        <div>
+            <label for="title">Title</label>
+            <input type="text" id="title" required />
+        </div>
+        <div>
+            <label for="startTime">Start time</label>
+            <input type="time" id="startTime" step="900" required />
+        </div>
+        <div>
+            <label for="duration">Duration (minutes, 15-180)</label>
+            <input type="number" id="duration" value="30" min="15" max="180" step="15" required />
+        </div>
+        <div style="margin-top:8px;">
+            <button type="submit">Create</button>
+            <button type="button" id="cancelCreate">Cancel</button>
+        </div>
+    </form>
+    <p id="errorBox" style="color:red; display:none;"></p>
+    <p id="hintBox" style="color:#666;">Minimum 15 minutes, maximum 3 hours.</p>
+    <p><small>Times are in your local timezone.</small></p>
+    
+</div>
+
+<script src="~/js/calendar.js" asp-append-version="true"></script>

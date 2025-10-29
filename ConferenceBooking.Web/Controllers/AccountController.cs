@@ -30,13 +30,13 @@ public class AccountController : Controller
     }
 
     /// <summary>
-    /// Logs current user out by clearing session and redirects to the calendar view.
+    /// Logs current user out by clearing session and redirects to the public landing page.
     /// GET /Account/Logout
     /// </summary>
     [HttpGet("Logout")]
     public IActionResult Logout()
     {
         HttpContext.Session.Clear();
-        return RedirectToAction("Calendar", "Booking");
+        return RedirectToAction("Index", "Home");
     }
 }
