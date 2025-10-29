@@ -1,0 +1,40 @@
+@{
+    var pageTitle = (string?)ViewData["Title"] ?? "Conference room booking";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@pageTitle</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <header>
+        <div class="container">
+            <strong>Conference room booking</strong>
+            <span class="right">
+                @{
+                    var user = Context.Session.GetString("UserLogin");
+                    var role = Context.Session.GetString("UserRole");
+                }
+                @if (!string.IsNullOrEmpty(user))
+                {
+                    <span>Signed in as <b>@user</b> (@role)</span>
+                    <span> | </span>
+                    <a href="/Account/Logout">Logout</a>
+                }
+                else
+                {
+                    <a href="/Account/Login/admin">Login as admin</a>
+                    <span> | </span>
+                    <a href="/Account/Login/user">Login as user</a>
+                }
+            </span>
+        </div>
+    </header>
+    <main class="container">
+        @RenderBody()
+    </main>
+</body>
+</html>

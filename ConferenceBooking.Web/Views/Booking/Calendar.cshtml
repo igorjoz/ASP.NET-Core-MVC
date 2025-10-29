@@ -1,0 +1,26 @@
+@{
+    // View title used by layout's <title> tag
+    ViewData["Title"] = "Booking calendar";
+    var user = Context.Session.GetString("UserLogin");
+    var role = Context.Session.GetString("UserRole");
+}
+
+<h2>Booking calendar</h2>
+
+@if (!string.IsNullOrEmpty(user))
+{
+    <p>Signed in as: <strong>@user</strong> (role: @role)</p>
+    <p><a href="/Account/Logout">Logout</a></p>
+}
+else
+{
+    <p>You are not logged in.</p>
+    <div>
+        <a href="/Account/Login/admin">Login as admin</a>
+        <span> | </span>
+        <a href="/Account/Login/user">Login as user</a>
+    </div>
+}
+
+<hr />
+<p>The calendar and reservation list will appear here soon.</p>
