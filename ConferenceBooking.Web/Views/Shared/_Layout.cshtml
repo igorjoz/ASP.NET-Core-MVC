@@ -22,6 +22,13 @@
                 {
                     <span>Signed in as <b>@user</b> (@role)</span>
                     <span> | </span>
+                    @if (string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <a href="/Room/Manage">Manage rooms</a>
+                        <span> | </span>
+                        <a href="/Init">Init</a>
+                        <span> | </span>
+                    }
                     <a href="/Account/Logout">Logout</a>
                 }
                 else

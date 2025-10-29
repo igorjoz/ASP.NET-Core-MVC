@@ -1,0 +1,63 @@
+@model IReadOnlyList<ConferenceBooking.Web.Models.Room>
+@{
+    ViewData["Title"] = "Manage rooms";
+}
+
+<h2>Manage rooms</h2>
+
+<section>
+    <h3>Add new room</h3>
+    <form asp-action="Add" asp-controller="Room" method="post">
+        @Html.AntiForgeryToken()
+        <div>
+            <label for="name">Name</label>
+            <input type="text" id="name" name="name" required />
+            <span style="color:red">@Html.ValidationMessage("name")</span>
+        </div>
+        <div>
+            <label for="capacity">Capacity</label>
+            <input type="number" id="capacity" name="capacity" min="1" required />
+            <span style="color:red">@Html.ValidationMessage("capacity")</span>
+        </div>
+        <div style="margin-top:8px;">
+            <button type="submit">Add room</button>
+        </div>
+    </form>
+</section>
+
+<hr />
+
+<section>
+    <h3>Existing rooms</h3>
+    @if (Model.Count == 0)
+    {
+        <p>No rooms yet.</p>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th style="text-align:left;">Name</th>
+                    <th>Capacity</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var r in Model)
+            {
+                <tr>
+                    <td>@r.Name</td>
+                    <td style="text-align:center;">@r.Capacity</td>
+                    <td>
+                        <form asp-action="Delete" asp-controller="Room" asp-route-id="@r.Id" method="post" style="display:inline;">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" onclick="return confirm('Delete this room?');">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</section>
