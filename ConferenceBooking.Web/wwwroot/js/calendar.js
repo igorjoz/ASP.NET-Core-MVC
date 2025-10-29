@@ -33,7 +33,11 @@
     formWrap.style.display = 'none';
     container.innerHTML = 'Loading...';
     const date = dayPicker.value;
-    const res = await fetch(`/api/booking/getForDay?date=${date}`);
+    const res = await fetch(`/Booking/GetForDay?date=${date}`, { headers: { 'Accept': 'application/json' } });
+    if(!res.ok){
+      container.innerHTML = 'Failed to load calendar data.';
+      return;
+    }
     const data = await res.json();
     renderDayGrid(data.rooms, data.bookings);
   }
