@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 
 using ConferenceBooking.Web.Filters;
 using ConferenceBooking.Web.Services;
+using ConferenceBooking.Web.Models;
 
 namespace ConferenceBooking.Web.Controllers;
 
@@ -48,5 +49,63 @@ public class BookingController : Controller
                 b.CreatedByLogin
             })
         });
+    }
+
+    public class MyBookingViewModel
+    {
+        public Guid Id { get; set; }
+        public string RoomName { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public DateTime StartLocal { get; set; }
+        public DateTime EndLocal { get; set; }
+    }
+
+    /// <summary>
+    /// Shows upcoming bookings for the logged-in user with the ability to cancel.
+    /// Route: GET /Booking/MyBookings
+    /// </summary>
+    [HttpGet]
+    [LoggedInOnly]
+    public IActionResult MyBookings()
+    {
+        var login = HttpContext.Session.GetString("UserLogin")!;
+        var tz = TimeZoneInfo.Local;
+        var rooms = _repo.GetRooms().ToDictionary(r => r.Id, r => r.Name);
+        var upcoming = _repo.GetUpcomingBookingsForUser(login);
+
+        var model = upcoming
+            .Select(b => new MyBookingViewModel
+            {
+                Id = b.Id,
+                RoomName = rooms.TryGetValue(b.RoomId, out var rn) ? rn : b.RoomId.ToString(),
+                Title = b.Title,
+                StartLocal = TimeZoneInfo.ConvertTimeFromUtc(b.StartUtc, tz),
+                EndLocal = TimeZoneInfo.ConvertTimeFromUtc(b.EndUtc, tz)
+            })
+            .OrderBy(m => m.StartLocal)
+            .ToList();
+
+        return View(model);
+    }
+
+    /// <summary>
+    /// Cancels a booking owned by the logged-in user.
+    /// Route: POST /Booking/Cancel
+    /// </summary>
+    [HttpPost]
+    [LoggedInOnly]
+    public IActionResult Cancel([FromForm] Guid id)
+    {
+        var login = HttpContext.Session.GetString("UserLogin")!;
+        var (ok, error) = _repo.TryCancelBooking(id, login);
+        if (!ok)
+        {
+            TempData["Error"] = error ?? "Failed to cancel the booking.";
+        }
+        else
+        {
+            TempData["Message"] = "Booking canceled.";
+        }
+        return RedirectToAction(nameof(MyBookings));
     }
 }

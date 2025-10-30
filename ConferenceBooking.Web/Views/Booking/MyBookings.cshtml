@@ -1,0 +1,51 @@
+@model IEnumerable<ConferenceBooking.Web.Controllers.BookingController.MyBookingViewModel>
+@{
+    ViewData["Title"] = "My bookings";
+}
+
+<h2>My upcoming bookings</h2>
+
+@if (TempData["Error"] != null)
+{
+    <p style="color:red">@TempData["Error"]</p>
+}
+@if (TempData["Message"] != null)
+{
+    <p style="color:green">@TempData["Message"]</p>
+}
+
+@if (!Model.Any())
+{
+    <p>No upcoming bookings.</p>
+}
+else
+{
+    <table style="border-collapse:collapse; width:100%">
+        <thead>
+            <tr>
+                <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px;">Room</th>
+                <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px;">Title</th>
+                <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px;">Start</th>
+                <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px;">End</th>
+                <th style="border-bottom:1px solid #ddd; padding:6px;"></th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var b in Model)
+        {
+            <tr>
+                <td style="padding:6px; border-bottom:1px solid #f0f0f0;">@b.RoomName</td>
+                <td style="padding:6px; border-bottom:1px solid #f0f0f0;">@b.Title</td>
+                <td style="padding:6px; border-bottom:1px solid #f0f0f0;">@b.StartLocal.ToString("g")</td>
+                <td style="padding:6px; border-bottom:1px solid #f0f0f0;">@b.EndLocal.ToString("g")</td>
+                <td style="padding:6px; border-bottom:1px solid #f0f0f0; text-align:right;">
+                    <form method="post" action="/Booking/Cancel" onsubmit="return confirm('Cancel this booking?');">
+                        <input type="hidden" name="id" value="@b.Id" />
+                        <button type="submit">Cancel</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}

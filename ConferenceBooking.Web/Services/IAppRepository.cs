@@ -20,4 +20,6 @@ public interface IAppRepository
     // Bookings
     IReadOnlyList<Booking> GetBookingsForDay(DateOnly day, TimeZoneInfo tz);
     (bool ok, string? error, Booking? booking) TryCreateBooking(Guid roomId, DateTime startLocal, DateTime endLocal, string title, string createdByLogin, TimeZoneInfo tz);
+    IReadOnlyList<Booking> GetUpcomingBookingsForUser(string login);
+    (bool ok, string? error) TryCancelBooking(Guid bookingId, string login);
 }

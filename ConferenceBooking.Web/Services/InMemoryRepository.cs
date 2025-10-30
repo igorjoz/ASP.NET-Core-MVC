@@ -73,7 +73,7 @@ public class InMemoryRepository : IAppRepository
 
         lock (_userLock)
         {
-            var existing = _users.FirstOrDefault(u => string.Equals(u.Login, login, StringComparison.OrdinalIgnoreCase));
+            var existing = _users.FirstOrDefault(u => string.Equals(u.Login, login, StringComparison.Ordinal));
             if (existing != null) return existing;
             var user = new AppUser { Login = login.Trim(), Role = role };
             _users.Add(user);
@@ -86,7 +86,7 @@ public class InMemoryRepository : IAppRepository
         if (string.IsNullOrWhiteSpace(login)) return null;
         lock (_userLock)
         {
-            return _users.FirstOrDefault(u => string.Equals(u.Login, login, StringComparison.OrdinalIgnoreCase));
+            return _users.FirstOrDefault(u => string.Equals(u.Login, login, StringComparison.Ordinal));
         }
     }
 
@@ -180,6 +180,71 @@ public class InMemoryRepository : IAppRepository
                 };
                 _bookings.Add(booking);
                 return (true, null, booking);
+            }
+        }
+    }
+
+    public IReadOnlyList<Booking> GetUpcomingBookingsForUser(string login)
+    {
+        if (string.IsNullOrWhiteSpace(login)) return Array.Empty<Booking>();
+        var nowUtc = DateTime.UtcNow;
+        lock (_bookings)
+        {
+            return _bookings
+                .Where(b => string.Equals(b.CreatedByLogin, login, StringComparison.Ordinal) && b.EndUtc > nowUtc)
+                .OrderBy(b => b.StartUtc)
+                .Select(b => new Booking
+                {
+                    Id = b.Id,
+                    RoomId = b.RoomId,
+                    Title = b.Title,
+                    StartUtc = b.StartUtc,
+                    EndUtc = b.EndUtc,
+                    CreatedByLogin = b.CreatedByLogin,
+                    CreatedAtUtc = b.CreatedAtUtc
+                })
+                .ToList();
+        }
+    }
+
+    public (bool ok, string? error) TryCancelBooking(Guid bookingId, string login)
+    {
+        if (bookingId == Guid.Empty) return (false, "Invalid booking id.");
+        if (string.IsNullOrWhiteSpace(login)) return (false, "Not logged in.");
+
+        // Find the booking first to determine room for locking
+        Booking? existing;
+        lock (_bookings)
+        {
+            existing = _bookings.FirstOrDefault(b => b.Id == bookingId);
+        }
+
+        if (existing == null) return (false, "Booking not found.");
+
+        // Get the per-room lock to coordinate with concurrent creates
+        object roomLock;
+        lock (_roomLock)
+        {
+            if (!_roomLocks.TryGetValue(existing.RoomId, out roomLock!))
+            {
+                roomLock = new object();
+                _roomLocks[existing.RoomId] = roomLock;
+            }
+        }
+
+        lock (roomLock)
+        {
+            lock (_bookings)
+            {
+                var b = _bookings.FirstOrDefault(x => x.Id == bookingId);
+                if (b == null) return (false, "Booking not found.");
+                if (!string.Equals(b.CreatedByLogin, login, StringComparison.Ordinal))
+                    return (false, "You can only cancel your own booking.");
+                if (b.StartUtc <= DateTime.UtcNow)
+                    return (false, "Cannot cancel a booking that has started or passed.");
+
+                _bookings.Remove(b);
+                return (true, null);
             }
         }
     }

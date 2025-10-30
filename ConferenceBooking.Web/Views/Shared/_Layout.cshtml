@@ -22,6 +22,10 @@
                 {
                     <span>Signed in as <b>@user</b> (@role)</span>
                     <span> | </span>
+                    <a href="/Booking/Calendar">Calendar</a>
+                    <span> | </span>
+                    <a href="/Booking/MyBookings">My bookings</a>
+                    <span> | </span>
                     @if (string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase))
                     {
                         <a href="/Room/Manage">Manage rooms</a>
