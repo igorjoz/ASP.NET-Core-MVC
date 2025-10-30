@@ -122,13 +122,27 @@ public class InMemoryRepository : IAppRepository
         if (string.IsNullOrWhiteSpace(title)) return (false, "Title is required.", null);
         if (startLocal >= endLocal) return (false, "Start must be before end.", null);
 
-        var duration = endLocal - startLocal;
+        // Normalize incoming values that might be Utc (because JS Date -> ISO string with Z)
+        DateTime NormalizeToLocalWall(DateTime dt)
+        {
+            return dt.Kind switch
+            {
+                DateTimeKind.Utc => TimeZoneInfo.ConvertTimeFromUtc(dt, tz),
+                DateTimeKind.Local => dt,
+                _ => dt // Unspecified: already a local wall clock time
+            };
+        }
+
+        var startLocalWall = NormalizeToLocalWall(startLocal);
+        var endLocalWall = NormalizeToLocalWall(endLocal);
+
+        var duration = endLocalWall - startLocalWall;
         if (duration < TimeSpan.FromMinutes(15)) return (false, "Minimum booking duration is 15 minutes.", null);
         if (duration > TimeSpan.FromHours(3)) return (false, "Maximum booking duration is 3 hours.", null);
 
-        // Normalize to UTC
-        var startUtc = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(startLocal, DateTimeKind.Unspecified), tz);
-        var endUtc = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(endLocal, DateTimeKind.Unspecified), tz);
+        // Convert normalized local wall time to UTC for storage
+        var startUtc = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(startLocalWall, DateTimeKind.Unspecified), tz);
+        var endUtc = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(endLocalWall, DateTimeKind.Unspecified), tz);
 
         // Per-room lock for race-free check+add
         object roomLock;

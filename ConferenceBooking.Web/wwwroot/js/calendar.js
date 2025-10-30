@@ -95,12 +95,54 @@
         // Check if booking occupies this slot
         const cellStart = new Date(`${dateStr}T${td.dataset.time}:00`);
         const cellEnd = new Date(cellStart.getTime() + SLOT_MINUTES*60000);
-        const bs = (byRoom.get(r.id)||[]).filter(b => new Date(b.endLocal) > cellStart && new Date(b.startLocal) < cellEnd);
+        const roomBookings = (byRoom.get(r.id)||[]);
+        const bs = roomBookings.filter(b => new Date(b.endLocal) > cellStart && new Date(b.startLocal) < cellEnd);
         if(bs.length>0){
-          td.style.background='#fdebd0';
+          const b = bs[0];
+          const bStart = new Date(b.startLocal);
+          const bEnd = new Date(b.endLocal);
+
+          // Occupied cell styling
           td.style.cursor='not-allowed';
-          td.title = bs.map(b => `${b.title} (${new Date(b.startLocal).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}–${new Date(b.endLocal).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})})`).join('\n');
-          td.textContent = bs[0].title;
+          td.style.position='relative';
+          td.title = `${b.title} (${bStart.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}–${bEnd.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})})`;
+
+          // Compute overlap within this 30-min slot in minutes
+          const overlapStart = new Date(Math.max(cellStart.getTime(), bStart.getTime()));
+          const overlapEnd = new Date(Math.min(cellEnd.getTime(), bEnd.getTime()));
+          const overlapMin = Math.max(0, (overlapEnd - overlapStart) / 60000);
+          const startOffsetMin = Math.max(0, (overlapStart - cellStart) / 60000);
+
+          // Create partial-height overlay representing the exact portion occupied in this cell
+          const block = document.createElement('div');
+          block.style.position = 'absolute';
+          block.style.left = '2px';
+          block.style.right = '2px';
+          block.style.background = '#fdebd0';
+          block.style.border = '1px solid #f5d6a8';
+          block.style.borderRadius = '4px';
+          block.style.pointerEvents = 'none';
+          block.style.overflow = 'hidden';
+
+          const heightPct = Math.max(4, (overlapMin / SLOT_MINUTES) * 100);
+          const topPct = (startOffsetMin / SLOT_MINUTES) * 100;
+          block.style.top = `${topPct}%`;
+          block.style.height = `${heightPct}%`;
+
+          // Show the title only in the first slot that contains the booking start.
+          const isFirstSlot = bStart >= cellStart && bStart < cellEnd;
+          if(isFirstSlot){
+            const label = document.createElement('div');
+            label.textContent = b.title;
+            label.style.fontSize = '12px';
+            label.style.padding = '2px 4px';
+            label.style.whiteSpace = 'nowrap';
+            label.style.textOverflow = 'ellipsis';
+            label.style.overflow = 'hidden';
+            block.appendChild(label);
+          }
+
+          td.appendChild(block);
         } else {
           td.addEventListener('click', onFreeCellClick);
         }
