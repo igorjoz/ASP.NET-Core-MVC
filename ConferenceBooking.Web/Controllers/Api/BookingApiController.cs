@@ -41,7 +41,43 @@ public class BookingApiController : ControllerBase
         });
     }
 
-    public record CreateRequest(Guid RoomId, DateTime StartLocal, DateTime EndLocal, string Title);
+    public class CreateRequest : System.ComponentModel.DataAnnotations.IValidatableObject
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public Guid RoomId { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public DateTime StartLocal { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public DateTime EndLocal { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.StringLength(200, MinimumLength = 1)]
+        public string Title { get; set; } = string.Empty;
+
+        public IEnumerable<System.ComponentModel.DataAnnotations.ValidationResult> Validate(System.ComponentModel.DataAnnotations.ValidationContext validationContext)
+        {
+            if (StartLocal >= EndLocal)
+            {
+                yield return new System.ComponentModel.DataAnnotations.ValidationResult(
+                    "Start must be before end.", new[] { nameof(StartLocal), nameof(EndLocal) });
+                yield break;
+            }
+
+            var duration = EndLocal - StartLocal;
+            if (duration < TimeSpan.FromMinutes(15))
+            {
+                yield return new System.ComponentModel.DataAnnotations.ValidationResult(
+                    "Minimum booking duration is 15 minutes.", new[] { nameof(StartLocal), nameof(EndLocal) });
+            }
+            if (duration > TimeSpan.FromHours(3))
+            {
+                yield return new System.ComponentModel.DataAnnotations.ValidationResult(
+                    "Maximum booking duration is 3 hours.", new[] { nameof(StartLocal), nameof(EndLocal) });
+            }
+        }
+    }
 
     /// <summary>
     /// Creates a booking for a given room and local time range.
@@ -49,6 +85,13 @@ public class BookingApiController : ControllerBase
     [HttpPost("create")]
     public IActionResult Create([FromBody] CreateRequest req)
     {
+        if (!ModelState.IsValid)
+        {
+            // Return the first validation message (UI displays a single error line)
+            var firstError = ModelState.Values.SelectMany(v => v.Errors).FirstOrDefault()?.ErrorMessage
+                             ?? "Validation error.";
+            return BadRequest(new { error = firstError });
+        }
         var login = HttpContext.Session.GetString("UserLogin")!;
         var tz = TimeZoneInfo.Local;
         var (ok, error, booking) = _repo.TryCreateBooking(req.RoomId, req.StartLocal, req.EndLocal, req.Title, login, tz);
